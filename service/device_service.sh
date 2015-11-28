@@ -8,9 +8,9 @@
 # Short-Description: voter
 ### END INIT INFO
 
-DAEMON="/home/pi/scripts/status.py"
+DAEMON="/home/pi/scripts/device.py"
 DAEMONUSER="root"
-DEAMON_NAME="status"
+DEAMON_NAME="device"
 
 PATH="/sbin:/bin:/usr/sbin:/usr/bin"
 
