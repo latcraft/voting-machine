@@ -1,5 +1,5 @@
 
-host     = '192.170.0.102'
+host     = '192.170.0.108'
 user     = 'pi'
 password = 'raspberry'
 hostname = 'vipi'

@@ -37,13 +37,9 @@ task installI2C(description: 'Install I2C tools.') << {
 
 installI2C.mustRunAfter updateSystem
 
-
 task installPythonLibs(description: 'Install common Python libraries.') << {
   remote {
-    exec 'sudo apt-get -yq install python-setuptools'
-    exec 'sudo apt-get -yq install python-smbus'
-    exec 'sudo apt-get -yq install python-yaml'
-    exec 'sudo apt-get -yq install python-picamera'
+    exec 'sudo apt-get -yq install python-setuptools python-smbus python-yaml python-picamera python-psutil'
     if (fail('sudo python -c "import usb"')) {
       exec 'sudo rm -rf /home/pi/pyusb-1.0.0b1'
       exec 'wget https://github.com/walac/pyusb/archive/1.0.0b1.tar.gz'
@@ -57,7 +53,7 @@ task installPythonLibs(description: 'Install common Python libraries.') << {
 
 installPythonLibs.mustRunAfter updateSystem
 
-task installNfc(description: 'Install common NFC libraries.', dependsOn: [ installPythonLibs, installTools ]) << {
+task installNfc(description: 'Install common NFC libraries.') << {
   remote {
 
     exec 'sudo apt-get -yq install libusb-dev'
@@ -139,9 +135,21 @@ task installNfc(description: 'Install common NFC libraries.', dependsOn: [ insta
   }
 }
 
-installNfc.mustRunAfter updateSystem
+installNfc.mustRunAfter([ updateSystem, installTools, installPythonLibs ])
 
-task installGrovePi(description: 'Install GrovePi libraries.', dependsOn: [ installTools ] ) << {
+task installPiGlow(description: 'Install PiGlow libraries.') << {
+  remote {
+    if (fail('sudo python -c "import piglow"')) {
+      exec 'sudo rm -rf /home/pi/PiGlow'
+      exec 'git clone https://github.com/Boeeerb/PiGlow.git'
+      exec 'cd /home/pi/PiGlow ; sudo python setup.py install'
+    }
+  }
+}
+
+installPiGlow.mustRunAfter([ updateSystem, installTools, installPythonLibs ])
+
+task installGrovePi(description: 'Install GrovePi libraries.') << {
   remote {
     if (fail('sudo python -c "import grovepi"')) {
       exec 'sudo rm -rf /home/pi/GrovePi'
@@ -151,21 +159,26 @@ task installGrovePi(description: 'Install GrovePi libraries.', dependsOn: [ inst
   }
 }
 
+installGrovePi.mustRunAfter([ updateSystem, installTools, installPythonLibs ])
+
 task configureWifi(description: 'Configure WiFi networks.') << {
   remote {
-    // Configure WiFi networks.
-    // TODO: sudo nano /etc/network/interfaces
-    //  auto lo
-    //  
-    //  iface lo inet loopback
-    //  iface eth0 inet dhcp
-    //  
-    //  allow-hotplug wlan0
-    //  
-    //  iface wlan0 inet dhcp
-    //  wpa-ssid aestas_hq
-    //  wpa-psk *******    
-    // To be able to automatically connect to several WiFi networks you can read [these intructions](http://www.instantsupportsite.com/self-help/raspberry-pi/raspberry-connect-multiple-wireless-networks/).
+    remoteFile('/tmp/interfaces').text = """
+      auto lo
+      
+      iface lo inet loopback
+      iface eth0 inet dhcp
+      
+      allow-hotplug wlan0
+      
+      iface wlan0 inet dhcp
+      wpa-ssid ${latcraftIOTNetworkName}
+      wpa-psk ${latcraftIOTNetworkPass}
+    """
+    exec 'sudo cp /tmp/interfaces /etc/network/interfaces'
+    exec 'sudo systemctl daemon-reload'
+    // exec 'sudo /etc/init.d/networking stop'
+    // exec 'sudo /etc/init.d/networking start'
   }
 }
 
@@ -198,6 +211,14 @@ task configureServices(description: 'Configure WiFi networks.') << {
   }
 }
 
+task setHostname(description: 'Set hostname') << {
+  remote {
+    // TODO
+    // sudo nano /etc/hosts
+    // sudo nano /etc/hostname
+    // sudo /etc/init.d/hostname.sh
+  }
+}
 
-task initNode(dependsOn: [ updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, configureWifi, copyCode, configureServices ]) 
+task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, configureWifi, copyCode, configureServices ]) 
 task configureNode(dependsOn: [ configureWifi, copyCode, configureServices ]) 
