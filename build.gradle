@@ -3,7 +3,11 @@ defaultHost = args[0]
 defaultUser = 'pi'
 defaultPassword = 'raspberry'
 
-task init << {
+task updateSystem() << {
+
+}
+
+task init() << {
   remoteSession {
 
     exec 'sudo apt-get -y update'
