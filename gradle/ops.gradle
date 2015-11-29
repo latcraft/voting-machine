@@ -1,0 +1,16 @@
+
+task getDeviceLog(description: 'Retrieve device log.') << {
+  remote {
+    scp {
+      from { remoteFile "/var/log/device.log" }
+      into { localDir "${buildDir}/${project.hostConfig.name}.log" }
+    }
+  }
+}
+
+task deleteDeviceLog(description: 'Delete device log.') << {
+  remote {
+    exec 'sudo rm -rf /var/log/device.log'
+    exec 'sudo service device restart'
+  }
+}

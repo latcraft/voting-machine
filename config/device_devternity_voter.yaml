@@ -1,3 +1,8 @@
-led_device: piglow
+board: grove
+
+grove_led: 4
+grove_buzzer: 5
+grove_rtc: 6
+
 nfc_vendor_id: 1254
 nfc_product_id: 21905

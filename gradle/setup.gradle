@@ -177,8 +177,6 @@ task configureWifi(description: 'Configure WiFi networks.') << {
     """
     exec 'sudo cp /tmp/interfaces /etc/network/interfaces'
     exec 'sudo systemctl daemon-reload'
-    // exec 'sudo /etc/init.d/networking stop'
-    // exec 'sudo /etc/init.d/networking start'
   }
 }
 
@@ -215,10 +213,9 @@ configureServices.mustRunAfter copyCode
 
 task setHostname(description: 'Set hostname') << {
   remote {
-    // TODO
-    // sudo nano /etc/hosts
-    // sudo nano /etc/hostname
-    // sudo /etc/init.d/hostname.sh
+    exec "sudo sed /etc/hosts -i -r -e \"s/^127\\.0\\.1\\.1.*\$/127.0.1.1 ${project.hostConfig.name}/"
+    exec "sudo sh -c 'echo ${project.hostConfig.name} >> /etc/hostname'"
+    exec "sudo /etc/init.d/hostname.sh"
   }
 }
 

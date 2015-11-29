@@ -1,3 +1,4 @@
-led_device: piglow
+board: pidie
+
 nfc_vendor_id: 1254
 nfc_product_id: 21905

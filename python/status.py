@@ -1,39 +1,40 @@
 #!/usr/bin/python
+
 import web
 import subprocess
 import re
 import time
 
 urls = (
-	'/', 'index',
-	'/app.py', 'ajax'
+  '/', 'index',
+  '/app.py', 'ajax'
 )
 
 app = web.application(urls, globals())
 
 class ajax:
-	def GET(self):
-                output = subprocess.check_output("grep MemTotal /proc/meminfo", shell = True)
-                MemTotal = re.search('(\d+)', output).group(1)
-                output = subprocess.check_output("grep MemFree /proc/meminfo", shell = True)
-                MemFree = re.search('(\d+)', output).group(1)
-                output = subprocess.check_output("free | grep Swap", shell = True)
-                match = re.search('(\d+)\s+\d+\s+(\d+)', output)
-                SwapTotal = match.group(1)
-                SwapFree = match.group(2)
-                output = subprocess.check_output("df | grep rootfs", shell = True)
-                match = re.search('(\d+)\s+\d+\s+(\d+)', output)
-                DiskTotal = match.group(1)
-                DiskFree = match.group(2)
-                output = subprocess.check_output("cat /proc/loadavg", shell = True)
-                Processor = re.search('^\d+\.\d+\s+\d+\.\d+\s+(\d+)', output).group(1)
-                output = subprocess.check_output("cat /proc/uptime", shell = True)
-                Uptime = re.search('^(\d+)', output).group(1)
-                output = subprocess.check_output("ps aux | wc -l", shell = True)
-                Processes = int(re.search('^(\d+)', output).group(1)) - 1
-                output = subprocess.check_output("ifconfig wlan0 | grep 'inet addr'", shell = True)
-                Address = re.search('inet addr:(\d+\.\d+\.\d+\.\d+)', output).group(1)
-		return '''{
+  def GET(self):
+    output = subprocess.check_output("grep MemTotal /proc/meminfo", shell = True)
+    MemTotal = re.search('(\d+)', output).group(1)
+    output = subprocess.check_output("grep MemFree /proc/meminfo", shell = True)
+    MemFree = re.search('(\d+)', output).group(1)
+    output = subprocess.check_output("free | grep Swap", shell = True)
+    match = re.search('(\d+)\s+\d+\s+(\d+)', output)
+    SwapTotal = match.group(1)
+    SwapFree = match.group(2)
+    output = subprocess.check_output("df | grep rootfs", shell = True)
+    match = re.search('(\d+)\s+\d+\s+(\d+)', output)
+    DiskTotal = match.group(1)
+    DiskFree = match.group(2)
+    output = subprocess.check_output("cat /proc/loadavg", shell = True)
+    Processor = re.search('^\d+\.\d+\s+\d+\.\d+\s+(\d+)', output).group(1)
+    output = subprocess.check_output("cat /proc/uptime", shell = True)
+    Uptime = re.search('^(\d+)', output).group(1)
+    output = subprocess.check_output("ps aux | wc -l", shell = True)
+    Processes = int(re.search('^(\d+)', output).group(1)) - 1
+    output = subprocess.check_output("ifconfig wlan0 | grep 'inet addr'", shell = True)
+    Address = re.search('inet addr:(\d+\.\d+\.\d+\.\d+)', output).group(1)
+    return '''{
   "memory": "''' + str(int(float(MemFree) / float(MemTotal) * 100)) + '''",
   "swap": "''' + str(int(float(SwapFree) / float(SwapTotal) * 100)) + '''",
   "disk": "''' + str(int(float(DiskFree) / float(DiskTotal) * 100)) + '''",
@@ -45,8 +46,8 @@ class ajax:
 }'''
 
 class index:
-	def GET(self):
-		return '''<!doctype html>
+  def GET(self):
+    return '''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -205,4 +206,4 @@ $(document).ready(function()
 </html>'''
 
 if __name__ == "__main__":
-	app.run()
+  app.run()

@@ -6,13 +6,20 @@ import usb
 import nfc
 import yaml
 import logging
+
 import RPi.GPIO as GPIO
+import grovepi as Grove
 
 from piglow import PiGlow
 from threading import Thread
 from time import sleep
+from functools import partial
 
-# Logging setup
+
+################################################################################
+# LOGGING
+################################################################################
+
 logging.basicConfig(
   filename = '/var/log/device.log', 
   level    = logging.DEBUG, 
@@ -20,11 +27,26 @@ logging.basicConfig(
   datefmt  = '%Y-%m-%d %H:%M:%S'
 )
 
-# NFC reader constants
+################################################################################
+# DATA
+################################################################################
+
+active = True
+config = None
+
+with open('/etc/device.yaml', 'r') as f:
+  config = yaml.load(f)
+
+################################################################################
+# CONSTANTS
+################################################################################
+
+# NFC reader constants.
+
 DEFAULT_VENDOR_ID  = 1254
 DEFAULT_PRODUCT_ID = 21905
 
-# PiDie constants
+# PiDie constants.
 PIDIE_RED_LED1      = 7
 PIDIE_RED_LED2      = 11
 PIDIE_GREEN_LED1    = 12
@@ -55,27 +77,27 @@ PIGLOW_GROUPS       = [PIGLOW_RED_GROUP, PIGLOW_YELLOW_GROUP, PIGLOW_GREEN_GROUP
 PIGLOW_LED_OFF      = 0
 PIGLOW_LED_ON       = 255
 
-# Methods
+################################################################################
+# METHODS
+################################################################################
 
-active = True
-
-def readConfig():
-  with open('/etc/device.yaml', 'r') as f:
-    config = yaml.load(f)
-  return config
-
-def initLeds(config):
-  if (config['led_device'] == 'piglow'):
-    global piglow 
-    piglow = PiGlow()  
-    for led in PIGLOW_GROUPS:
-      piglow.colour(led, PIGLOW_LED_OFF)      
-  elif (config['led_device'] == 'pidie'):
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BOARD)
-    for led in PIDIE_LEDS:
-      GPIO.setup(led, GPIO.OUT)
-      GPIO.output(led, PIDIE_LED_OFF)
+def initBoards():
+  if (config['board'] is not None):
+    if (config['board'] == 'piglow'):
+      global piglow 
+      piglow = PiGlow()  
+      for led in PIGLOW_GROUPS:
+        piglow.colour(led, PIGLOW_LED_OFF)      
+    elif (config['board'] == 'pidie'):
+      GPIO.setwarnings(False)
+      GPIO.setmode(GPIO.BOARD)
+      for led in PIDIE_LEDS:
+        GPIO.setup(led, GPIO.OUT)
+        GPIO.output(led, PIDIE_LED_OFF)
+    elif (config['board'] == 'grove'):    
+      # TODO: Grove.pinMode(int(config['grove_led']), "OUTPUT")
+      # TODO: Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
+      # TODO: Grove.rtc_getTime()
    
 def nfcReaders(vendorId, productId):
   for device in usb.core.find(find_all=True):
@@ -94,44 +116,57 @@ def blinkPiDieLed(color = 0, timeout = 1):
   sleep(timeout)
   GPIO.output(PIDIE_LEDS[color], PIDIE_LED_OFF)   
 
-def buttonReaderThread(button, ledFunction, timeout):
+def blinkGroveLedAndBeepGroveBuzzer(color = 0, timeout = 1):
+  # TODO: Grove.pinMode(int(config['grove_led']), "OUTPUT")
+  # TODO: Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
+  Grove.digitalWrite(buzzer, 1)
+  Grove.analogWrite(light, 0)  
+  sleep(timeout)
+  Grove.digitalWrite(buzzer, 0)
+  Grove.analogWrite(light, 255)
+
+def buttonReaderThread(button, actionFunction, timeout):
   GPIO.setup(PIDIE_BUTTONS[button], GPIO.IN, pull_up_down = GPIO.PUD_UP)
   prev_input = GPIO.input(PIDIE_BUTTONS[button])
   while active:
     input = GPIO.input(PIDIE_BUTTONS[button])
     if ((not prev_input) and input):
       logging.info(str(PIDIE_BUTTONS[button]) + ' pressed')
-      if ledFunction is not None:
-        ledFunction(button, timeout)
+      if actionFunction is not None:
+        actionFunction(button, timeout)
     prev_input = input
     sleep(0.05)    
 
-def nfcReaderThread(reader, ledFunction, color, timeout):
+def nfcReaderThread(reader, actionFunction, color, timeout):
   def processTag(tag):
     logging.info( str(tag) + ' on ' + str(reader) )
-    if ledFunction is not None:
-      ledFunction(color, timeout)
+    if actionFunction is not None:
+      actionFunction(color, timeout)
     return True
   while active:
     reader.connect(rdwr={'on-connect': processTag})
 
-# Main
+
+################################################################################
+# MAIN
+################################################################################
 
 logging.info('Starting IOT service')
 
-config = readConfig()
-initLeds(config)
+initBoards()
 
 timeout = 0.3
-ledFunction = None
-if (config['led_device'] == 'pidie'):
-  ledFunction = blinkPiDieLed
-elif (config['led_device'] == 'piglow'):
-  ledFunction = blinkPiGlowLed
+actionFunction = None
+if (config['board'] == 'pidie'):
+  actionFunction = blinkPiDieLed
+elif (config['board'] == 'piglow'):
+  actionFunction = blinkPiGlowLed
+elif (config['board'] == 'grove'):
+  actionFunction = blinkGroveLedAndBeepGroveBuzzer
 
-if (config['led_device'] == 'pidie'):
+if (config['board'] == 'pidie'):
   for idx, button in enumerate(PIDIE_BUTTONS):
-    thread = Thread(target = buttonReaderThread, args = (idx, ledFunction, timeout))
+    thread = Thread(target = buttonReaderThread, args = (idx, actionFunction, timeout))
     thread.daemon = True
     thread.start()
 
@@ -140,7 +175,7 @@ productId = int(config['nfc_product_id']) if config['nfc_product_id'] is not Non
  
 for idx, reader in enumerate(nfcReaders(vendorId, productId)):
   logging.info( str(idx + 1) + ': ' + str(reader) )
-  thread = Thread(target = nfcReaderThread, args = (reader, ledFunction, idx, timeout))
+  thread = Thread(target = nfcReaderThread, args = (reader, actionFunction, idx, timeout))
   thread.daemon = True
   thread.start()
 
@@ -155,14 +190,4 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 print('Press Ctrl+C to exit')
 signal.pause()
-
-
-
-
-
-
-
-
-
-
 
