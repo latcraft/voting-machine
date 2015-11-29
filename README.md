@@ -6,7 +6,7 @@ Code for Voting Machine used at Latcraft meetups (<http://latcraft.lv>) and DevT
 
 Use latest Raspbian distribution.
 
-    gradlew init -Phosts=192.169.0.16 -Ptype=latcraft-voter
+    gradlew initNode -Phost=192.169.0.16 -Ptype=latcraft-voter
 
 ### Supported device types
 
