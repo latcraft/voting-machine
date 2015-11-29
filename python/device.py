@@ -1,10 +1,5 @@
 #!/usr/bin/python
 
-# TODO 0. read configuration data? device mapping?
-# TODO 3. save data to temporary db (sqllite?)
-# TODO 4. poll database for new records
-# TODO 5. send data to remote server (HTTP(S) POST?)
-
 import sys
 import signal
 import usb
@@ -19,7 +14,7 @@ from time import sleep
 
 # Logging setup
 logging.basicConfig(
-  filename = '/var/log/voter.log', 
+  filename = '/var/log/device.log', 
   level    = logging.DEBUG, 
   format   = '%(asctime)s %(message)s', 
   datefmt  = '%Y-%m-%d %H:%M:%S'
@@ -65,7 +60,7 @@ PIGLOW_LED_ON       = 255
 active = True
 
 def readConfig():
-  with open('/etc/voter.yaml', 'r') as f:
+  with open('/etc/device.yaml', 'r') as f:
     config = yaml.load(f)
   return config
 
@@ -122,7 +117,7 @@ def nfcReaderThread(reader, ledFunction, color, timeout):
 
 # Main
 
-logging.info('Starting voter service')
+logging.info('Starting IOT service')
 
 config = readConfig()
 initLeds(config)
@@ -140,7 +135,10 @@ if (config['led_device'] == 'pidie'):
     thread.daemon = True
     thread.start()
 
-for idx, reader in enumerate(nfcReaders(DEFAULT_VENDOR_ID, DEFAULT_PRODUCT_ID)):
+vendorId = int(config['nfc_vendor_id']) if config['nfc_vendor_id'] is not None else DEFAULT_VENDOR_ID  
+productId = int(config['nfc_product_id']) if config['nfc_product_id'] is not None else DEFAULT_PRODUCT_ID
+ 
+for idx, reader in enumerate(nfcReaders(vendorId, productId)):
   logging.info( str(idx + 1) + ': ' + str(reader) )
   thread = Thread(target = nfcReaderThread, args = (reader, ledFunction, idx, timeout))
   thread.daemon = True

@@ -184,32 +184,34 @@ task configureWifi(description: 'Configure WiFi networks.') << {
 
 task copyCode(description: 'Copy configuration and code.') << {
   remote {
+    exec "rm -rf /home/pi/config"
     exec "mkdir -p /home/pi/scripts"
-    exec "mkdir -p /home/pi/config"
     scp {
       from { localDir "python" }
       from { localDir "service" }
       from { localDir "api" }
       into { remoteDir "/home/pi/scripts" }
     }
-    scp {
-      from { localDir "config" }
-      into { remoteDir "/home/pi/config" }
-    }
   }
 }
 
 task configureServices(description: 'Configure WiFi networks.') << {
   remote {
-    // TODO: install services and copy configuration
-    //  cd /home/pi/scripts
-    //  sudo cp device.sh /etc/init.d/device
-    //  sudo chmod 755 /etc/init.d/device
-    //  sudo chmod 755 voter.py 
-    //  sudo update-rc.d voter defaults
-    //  sudo ln voter.yaml /etc/device.yaml  
+    String configFile = "device_${project.hostConfig.type}.yaml"
+    scp {
+      from { localFile "config/${configFile}" }
+      into { remoteDir "/home/pi/scripts" }
+    }
+    exec "sudo ln -f /home/pi/scripts/${configFile} /etc/device.yaml"
+    exec 'sudo cp /home/pi/scripts/device_service.sh /etc/init.d/device'
+    exec 'sudo chmod 755 /etc/init.d/device'
+    exec 'sudo chmod 755 /home/pi/scripts/device_service.sh'
+    exec 'sudo chmod 755 /home/pi/scripts/device.py'
+    exec 'sudo update-rc.d device defaults'
   }
 }
+
+configureServices.mustRunAfter copyCode
 
 task setHostname(description: 'Set hostname') << {
   remote {
@@ -221,4 +223,4 @@ task setHostname(description: 'Set hostname') << {
 }
 
 task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, configureWifi, copyCode, configureServices ]) 
-task configureNode(dependsOn: [ configureWifi, copyCode, configureServices ]) 
+task configureNode(dependsOn: [ copyCode, configureServices ]) 

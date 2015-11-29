@@ -34,7 +34,7 @@ sshOptions {
 project.ext.remote = { Closure cl ->
   file('hosts').eachFileMatch(FILES, ~/^.*?\.groovy$/) { File hostFile ->
     if (!project.hasProperty('host') || project.host.split(',').contains(hostFile.name.replace('.groovy', ''))) {
-      def hostConfig = new ConfigSlurper().parse(hostFile.text)
+      project.ext.hostConfig = new ConfigSlurper().parse(hostFile.text)
       remoteSession("${hostConfig.user}:${hostConfig.password ?: latcraftIOTDevicePassword}@${hostConfig.host}:22", cl)
     }
   }
