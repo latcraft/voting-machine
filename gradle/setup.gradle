@@ -184,6 +184,7 @@ task copyCode(description: 'Copy configuration and code.') << {
   remote {
     exec "rm -rf /home/pi/config"
     exec "mkdir -p /home/pi/scripts"
+    exec "rm -rf /home/pi/scripts/*"
     scp {
       from { localDir "scripts" }
       into { remoteDir "/home/pi/scripts" }
@@ -219,10 +220,10 @@ task configureServices(description: 'Configure WiFi networks.') << {
 
 configureServices.mustRunAfter copyCode
 
-task setHostname(description: 'Set hostname') << {
+task setHostname(description: 'Set hostname.') << {
   remote {
-    exec "sudo sed /etc/hosts -i -r -e \"s/^127\\.0\\.1\\.1.*\$/127.0.1.1 ${project.hostConfig.name}/"
-    exec "sudo sh -c 'echo ${project.hostConfig.name} >> /etc/hostname'"
+    exec "sudo sed /etc/hosts -i -r -e \"s/^127\\.0\\.1\\.1.*\$/127.0.1.1\\t${project.hostConfig.hostname}/\""
+    exec "sudo sh -c 'echo ${project.hostConfig.hostname} > /etc/hostname'"
     exec "sudo /etc/init.d/hostname.sh"
   }
 }

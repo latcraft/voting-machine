@@ -1,11 +1,11 @@
 #!/bin/sh -e
 ### BEGIN INIT INFO
-# Provides:          voter
+# Provides:          status
 # Required-Start:    $local_fs
 # Required-Stop:     $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: voter
+# Short-Description: status
 ### END INIT INFO
 
 DAEMON="/home/pi/scripts/status.py"

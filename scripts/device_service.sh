@@ -1,11 +1,11 @@
 #!/bin/sh -e
 ### BEGIN INIT INFO
-# Provides:          voter
+# Provides:          device
 # Required-Start:    $local_fs
 # Required-Stop:     $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: voter
+# Short-Description: device
 ### END INIT INFO
 
 DAEMON="/home/pi/scripts/device.py"
