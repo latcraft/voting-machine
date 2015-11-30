@@ -184,9 +184,11 @@ task configureWifi(description: 'Configure WiFi networks.') << {
       wpa-psk ${latcraftIOTNetworkPass}
     """
     exec 'sudo cp /tmp/interfaces /etc/network/interfaces'
-    exec 'sudo systemctl daemon-reload'
+    // exec 'sudo systemctl daemon-reload'
   }
 }
+
+configureWifi.mustRunAfter updateSystem
 
 task copyCode(description: 'Copy configuration and code.') << {
   remote {
@@ -236,5 +238,5 @@ task setHostname(description: 'Set hostname.') << {
   }
 }
 
-task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, configureWifi, copyCode, configureServices ]) 
+task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, configureWifi ]) 
 task configureNode(dependsOn: [ copyCode, configureServices ]) 

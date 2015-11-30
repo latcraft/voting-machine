@@ -22,7 +22,7 @@ class ajax:
     match = re.search('(\d+)\s+\d+\s+(\d+)', output)
     SwapTotal = match.group(1)
     SwapFree = match.group(2)
-    output = subprocess.check_output("df | grep rootfs", shell = True)
+    output = subprocess.check_output('df | grep -E "/dev/root|rootfs"', shell = True)
     match = re.search('(\d+)\s+\d+\s+(\d+)', output)
     DiskTotal = match.group(1)
     DiskFree = match.group(2)
