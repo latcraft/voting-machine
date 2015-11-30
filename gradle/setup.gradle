@@ -185,9 +185,7 @@ task copyCode(description: 'Copy configuration and code.') << {
     exec "rm -rf /home/pi/config"
     exec "mkdir -p /home/pi/scripts"
     scp {
-      from { localDir "python" }
-      from { localDir "service" }
-      from { localDir "api" }
+      from { localDir "scripts" }
       into { remoteDir "/home/pi/scripts" }
     }
   }
@@ -195,17 +193,27 @@ task copyCode(description: 'Copy configuration and code.') << {
 
 task configureServices(description: 'Configure WiFi networks.') << {
   remote {
+
     String configFile = "device_${project.hostConfig.type}.yaml"
+
     scp {
       from { localFile "config/${configFile}" }
       into { remoteDir "/home/pi/scripts" }
     }
     exec "sudo ln -f /home/pi/scripts/${configFile} /etc/device.yaml"
+
     exec 'sudo cp /home/pi/scripts/device_service.sh /etc/init.d/device'
     exec 'sudo chmod 755 /etc/init.d/device'
     exec 'sudo chmod 755 /home/pi/scripts/device_service.sh'
     exec 'sudo chmod 755 /home/pi/scripts/device.py'
     exec 'sudo update-rc.d device defaults'
+
+    exec 'sudo cp /home/pi/scripts/status_service.sh /etc/init.d/status'
+    exec 'sudo chmod 755 /etc/init.d/status'
+    exec 'sudo chmod 755 /home/pi/scripts/status_service.sh'
+    exec 'sudo chmod 755 /home/pi/scripts/status.py'
+    exec 'sudo update-rc.d status defaults'
+
   }
 }
 
