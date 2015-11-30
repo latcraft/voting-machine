@@ -48,6 +48,14 @@ task installPythonLibs(description: 'Install common Python libraries.') << {
     } else {
       println "pyusb is already installed!"
     }
+    if (fail('sudo python -c "import web"')) {
+      exec 'sudo rm -rf /home/pi/web.py-0.37'
+      exec 'wget http://webpy.org/static/web.py-0.37.tar.gz'
+      exec 'tar -xf web.py-0.37.tar.gz'
+      exec 'cd /home/pi/web.py-0.37 ; sudo python setup.py install'
+    } else {
+      println "web.py is already installed!"
+    }
   }
 }
 
