@@ -95,8 +95,8 @@ def initBoards():
         GPIO.setup(led, GPIO.OUT)
         GPIO.output(led, PIDIE_LED_OFF)
     elif (config['board'] == 'grove'):    
-      # TODO: Grove.pinMode(int(config['grove_led']), "OUTPUT")
-      # TODO: Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
+      Grove.pinMode(int(config['grove_led']), "OUTPUT")
+      Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
       # TODO: Grove.rtc_getTime()
    
 def nfcReaders(vendorId, productId):
