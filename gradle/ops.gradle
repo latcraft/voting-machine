@@ -3,7 +3,11 @@ task getDeviceLog(description: 'Retrieve device log.') << {
   remote {
     scp {
       from { remoteFile "/var/log/device.log" }
-      into { localDir "${buildDir}/${project.hostConfig.hostname}.log" }
+      into { localDir "${buildDir}/${project.hostConfig.hostname}-device.log" }
+    }
+    scp {
+      from { remoteFile "/var/log/daemon.log" }
+      into { localDir "${buildDir}/${project.hostConfig.hostname}-daemon.log" }
     }
   }
 }

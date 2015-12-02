@@ -39,7 +39,7 @@ installI2C.mustRunAfter updateSystem
 
 task installPythonLibs(description: 'Install common Python libraries.') << {
   remote {
-    exec 'sudo apt-get -yq install python-setuptools python-smbus python-yaml python-picamera python-psutil'
+    exec 'sudo apt-get -yq install python-setuptools python-smbus python-yaml python-picamera python-psutil python-pyscard'
     if (fail('sudo python -c "import usb"')) {
       exec 'sudo rm -rf /home/pi/pyusb-1.0.0b1'
       exec 'wget https://github.com/walac/pyusb/archive/1.0.0b1.tar.gz'
@@ -64,7 +64,7 @@ installPythonLibs.mustRunAfter updateSystem
 task installNfc(description: 'Install common NFC libraries.') << {
   remote {
 
-    exec 'sudo apt-get -yq install libusb-dev'
+    exec 'sudo apt-get -yq install libusb-dev pcscd pcsc-tools'
 
     // Install libnfc.
     if (fail('test -f /usr/lib/libnfc.so')) {

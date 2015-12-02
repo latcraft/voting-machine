@@ -117,13 +117,13 @@ def blinkPiDieLed(color = 0, timeout = 1):
   GPIO.output(PIDIE_LEDS[color], PIDIE_LED_OFF)   
 
 def blinkGroveLedAndBeepGroveBuzzer(color = 0, timeout = 1):
-  # TODO: Grove.pinMode(int(config['grove_led']), "OUTPUT")
-  # TODO: Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
+  light = int(config['grove_led'])
+  buzzer = int(config['grove_buzzer'])    
   Grove.digitalWrite(buzzer, 1)
-  Grove.analogWrite(light, 0)  
+  Grove.analogWrite(light, 255)  
   sleep(timeout)
   Grove.digitalWrite(buzzer, 0)
-  Grove.analogWrite(light, 255)
+  Grove.analogWrite(light, 0)
 
 def buttonReaderThread(button, actionFunction, timeout):
   GPIO.setup(PIDIE_BUTTONS[button], GPIO.IN, pull_up_down = GPIO.PUD_UP)
