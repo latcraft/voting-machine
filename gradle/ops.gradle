@@ -1,13 +1,24 @@
 
-task getDeviceLog(description: 'Retrieve device log.') << {
+task getDeviceStatus(description: 'Retrieve device status.') << {
   remote {
-    scp {
-      from { remoteFile "/var/log/device.log" }
-      into { localDir "${buildDir}/${project.hostConfig.hostname}-device.log" }
+    println "Expected hostname: ${project.hostConfig.hostname}"
+    println "Expected mac: ${project.hostConfig.mac}"
+    if (fail("/bin/hostname | grep ${project.hostConfig.hostname}")) {
+      println "HOSTNAME MISMTACH!"
     }
-    scp {
-      from { remoteFile "/var/log/daemon.log" }
-      into { localDir "${buildDir}/${project.hostConfig.hostname}-daemon.log" }
+    if (fail("/sbin/ifconfig | grep ${project.hostConfig.mac}")) {
+      println "MAC MISMTACH!"
+    }
+  }
+}
+
+task getDeviceLogs(description: 'Retrieve device log.') << {
+  remote {
+    ['device.log', 'daemon.log', 'syslog', 'messages', 'dmesg', 'debug', 'kern.log', 'auth.log'].each { log ->
+      scp {
+        from { remoteFile "/var/log/${log}" }
+        into { localFile "${buildDir}/${project.hostConfig.hostname}-${log}" }
+      }
     }
   }
 }
