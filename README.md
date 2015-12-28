@@ -4,43 +4,26 @@ Code for Voting Machine used at Latcraft meetups (<http://latcraft.lv>) and DevT
 
 ## Installation
 
-Use latest Raspbian distribution.
+Raspberry Pi needs to be configured to use latest Raspbian distribution and be connected to the network (cable or WiFi). 
+After that you can execute the following command remotely from your computer to configure Raspberry Pi for one of the possible device types:
 
-    gradlew initNode -Phost=192.169.0.16 -Ptype=latcraft-voter
+    gradlew initNode -Phost=<DEVICE IP ADDRESS> -Ptype=<DEVICE TYPE>
 
 ### Supported device types
 
- - latcraft-voter
+ - `latcraft-voter` - button-based voting device. 
 
-// TODO: add pictures
+    ![First Generation](https://raw.githubusercontent.com/latcraft/voting-machine/master/images/03_button_voters.jpg)
 
- - latcraft-voter-v2
+ - `devternity-voter` - NFC-based voting device.
 
-// Future device
+    ![Second Generation](https://raw.githubusercontent.com/latcraft/voting-machine/master/images/04_devternity_nfc.jpg)
 
- - latcraft-clock
+ - `devternity-collector` - NFC data collector.
 
-// Future device
+    ![Data Collector](https://raw.githubusercontent.com/latcraft/voting-machine/master/images/06_devternity_collectors.jpg)
 
- - latcraft-dashboard
+ - `latcraft-dashboard` (not fully supported yet)
 
-
-
-
- - devternity-voter
-
-
- - devternity-collector
-
-## Usage
-
-### Dashboard
-
-### Status 
-
-### RTC
-
-
-
-
+    ![Dashboard](https://raw.githubusercontent.com/latcraft/voting-machine/master/images/07_dashboard.jpg)
 
