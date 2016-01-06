@@ -1,7 +1,7 @@
 
-host     = '192.170.0.102'
+host     = '192.169.1.13'
 user     = 'pi'
 password = 'raspberry'
 hostname = 'voting1'
 mac      = 'e8:4e:06:29:08:9e'
-type     = 'devternity_voter'
+type     = 'latcraft_voter'

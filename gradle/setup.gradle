@@ -202,7 +202,7 @@ task copyCode(description: 'Copy configuration and code.') << {
   }
 }
 
-task configureServices(description: 'Configure WiFi networks.') << {
+task configureServices(description: 'Configure services.') << {
   remote {
 
     String configFile = "device_${project.hostConfig.type}.yaml"
