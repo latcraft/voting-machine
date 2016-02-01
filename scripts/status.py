@@ -32,7 +32,7 @@ class ajax:
     Uptime = re.search('^(\d+)', output).group(1)
     output = subprocess.check_output("ps aux | wc -l", shell = True)
     Processes = int(re.search('^(\d+)', output).group(1)) - 1
-    output = subprocess.check_output("ifconfig wlan0 | grep 'inet addr'", shell = True)
+    output = subprocess.check_output("ifconfig | grep 'inet addr' | grep -v 127.0.0.1", shell = True)
     Address = re.search('inet addr:(\d+\.\d+\.\d+\.\d+)', output).group(1)
     return '''{
   "memory": "''' + str(int(float(MemFree) / float(MemTotal) * 100)) + '''",

@@ -64,6 +64,7 @@ PIDIE_GREEN_BUTTON  = 19
 PIDIE_YELLOW_BUTTON = 24
 PIDIE_BLUE_BUTTON   = 26
 PIDIE_BUTTONS       = [PIDIE_RED_BUTTON, PIDIE_YELLOW_BUTTON, PIDIE_GREEN_BUTTON, PIDIE_BLUE_BUTTON]
+PIDIE_BUTTON_NAMES  = ['RED',            'YELLOW',            'GREEN',            'BLUE']
 
 # PiGlow constants
 piglow              = None
@@ -83,6 +84,7 @@ PIGLOW_LED_ON       = 255
 
 def initBoards():
   if (config['board'] is not None):
+    logging.info('Using board: ' + config['board'])
     if (config['board'] == 'piglow'):
       global piglow 
       piglow = PiGlow()  
@@ -131,7 +133,7 @@ def buttonReaderThread(button, actionFunction, timeout):
   while active:
     input = GPIO.input(PIDIE_BUTTONS[button])
     if ((not prev_input) and input):
-      logging.info(str(PIDIE_BUTTONS[button]) + ' pressed')
+      logging.info(str(PIDIE_BUTTON_NAMES[button]) + ' pressed')
       if actionFunction is not None:
         actionFunction(button, timeout)
     prev_input = input

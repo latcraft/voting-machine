@@ -9,8 +9,9 @@
 ### END INIT INFO
 
 DAEMON="/home/pi/scripts/device.py"
-DAEMONUSER="root"
+DAEMON_USER="root"
 DEAMON_NAME="device"
+PID_FILE="/var/run/$DEAMON_NAME.pid"
 
 PATH="/sbin:/bin:/usr/sbin:/usr/bin"
 
@@ -20,13 +21,14 @@ test -x $DAEMON || exit 0
 
 d_start () {
   log_daemon_msg "Starting system $DEAMON_NAME Daemon"
-  start-stop-daemon --background --name $DEAMON_NAME --start --user $DAEMONUSER --exec $DAEMON
+  start-stop-daemon --start --background --name $DEAMON_NAME --make-pidfile --pidfile $PID_FILE --user $DAEMON_USER --exec $DAEMON
   log_end_msg $?
 }
 
 d_stop () {
   log_daemon_msg "Stopping system $DEAMON_NAME Daemon"
-  start-stop-daemon --name $DEAMON_NAME --stop --retry 5 --name $DEAMON_NAME
+  start-stop-daemon --stop --retry 5 --quiet --oknodo --pidfile $PID_FILE --user $DAEMON_USER
+  rm -f $PIDFILE
   log_end_msg $?
 }
 

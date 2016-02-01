@@ -46,6 +46,5 @@ task clean(type: Delete) {
 
 apply from: 'gradle/setup.gradle'
 apply from: 'gradle/ops.gradle'
-apply from: 'gradle/temp.gradle'
 
 

@@ -218,12 +218,14 @@ task configureServices(description: 'Configure services.') << {
     exec 'sudo chmod 755 /home/pi/scripts/device_service.sh'
     exec 'sudo chmod 755 /home/pi/scripts/device.py'
     exec 'sudo update-rc.d device defaults'
+    exec 'sudo /usr/sbin/service device restart'
 
     exec 'sudo cp /home/pi/scripts/status_service.sh /etc/init.d/status'
     exec 'sudo chmod 755 /etc/init.d/status'
     exec 'sudo chmod 755 /home/pi/scripts/status_service.sh'
     exec 'sudo chmod 755 /home/pi/scripts/status.py'
     exec 'sudo update-rc.d status defaults'
+    exec 'sudo /usr/sbin/service status restart'
 
   }
 }
