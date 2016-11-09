@@ -23,6 +23,17 @@ task getDeviceLogs(description: 'Retrieve device log.') << {
   }
 }
 
+task getDeviceCode(description: 'Retrieve device code.') << {
+  remote {
+    ['device.py', 'status.py'].each { code ->
+      scp {
+        from { remoteFile "/home/pi/scripts/${code}" }
+        into { localFile "${buildDir}/${project.hostConfig.hostname}-${code}" }
+      }
+    }
+  }
+}
+
 task deleteDeviceLog(description: 'Delete device log.') << {
   remote {
     exec 'sudo rm -rf /var/log/device.log'
