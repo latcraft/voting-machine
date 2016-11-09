@@ -42,7 +42,6 @@ with open('/etc/device.yaml', 'r') as f:
 ################################################################################
 
 # NFC reader constants.
-
 DEFAULT_VENDOR_ID  = 1254
 DEFAULT_PRODUCT_ID = 21905
 
@@ -78,11 +77,20 @@ PIGLOW_GROUPS       = [PIGLOW_RED_GROUP, PIGLOW_YELLOW_GROUP, PIGLOW_GREEN_GROUP
 PIGLOW_LED_OFF      = 0
 PIGLOW_LED_ON       = 255
 
+# SparkFun constants
+SF_RED_BUTTON       = 18
+SF_YELLOW_BUTTON    = 23
+SF_GREEN_BUTTON     = 24
+SF_BUTTONS          = [SF_RED_BUTTON, SF_YELLOW_BUTTON, SF_GREEN_BUTTON]
+SF_BUTTON_NAMES     = ['RED',         'YELLOW',         'GREEN'        ]
+
 ################################################################################
 # METHODS
 ################################################################################
 
 def initBoards():
+  GPIO.setwarnings(False)
+  GPIO.cleanup()
   if (config['board'] is not None):
     logging.info('Using board: ' + config['board'])
     if (config['board'] == 'piglow'):
@@ -100,6 +108,9 @@ def initBoards():
       Grove.pinMode(int(config['grove_led']), "OUTPUT")
       Grove.pinMode(int(config['grove_buzzer']), "OUTPUT")    
       # TODO: Grove.rtc_getTime()
+    elif (config['board'] == 'sparkfun'): 
+      GPIO.setwarnings(False)
+      GPIO.setmode(GPIO.BCM)   
    
 def nfcReaders(vendorId, productId):
   for device in usb.core.find(find_all=True):
@@ -139,6 +150,18 @@ def buttonReaderThread(button, actionFunction, timeout):
     prev_input = input
     sleep(0.05)    
 
+def buttonReaderThread2(button, actionFunction, timeout):
+  GPIO.setup(SF_BUTTONS[button], GPIO.IN, pull_up_down = GPIO.PUD_UP)
+  prev_input = GPIO.input(SF_BUTTONS[button])
+  while active:
+    input = GPIO.input(SF_BUTTONS[button])
+    if ((not prev_input) and input):
+      logging.info(str(SF_BUTTON_NAMES[button]) + ' pressed')
+      if actionFunction is not None:
+        actionFunction(button, timeout)
+    prev_input = input
+    sleep(0.05)    
+
 def nfcReaderThread(reader, actionFunction, color, timeout):
   def processTag(tag):
     logging.info( str(tag) + ' on ' + str(reader) )
@@ -169,6 +192,12 @@ elif (config['board'] == 'grove'):
 if (config['board'] == 'pidie'):
   for idx, button in enumerate(PIDIE_BUTTONS):
     thread = Thread(target = buttonReaderThread, args = (idx, actionFunction, timeout))
+    thread.daemon = True
+    thread.start()
+
+if (config['board'] == 'sparkfun'):
+  for idx, button in enumerate(SF_BUTTONS):
+    thread = Thread(target = buttonReaderThread2, args = (idx, None, timeout))
     thread.daemon = True
     thread.start()
 
