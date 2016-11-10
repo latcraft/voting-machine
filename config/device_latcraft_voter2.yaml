@@ -1,4 +1,6 @@
 board: sparkfun
 
+grove_buzzer: 6
+
 nfc_vendor_id: 1254
 nfc_product_id: 21905
