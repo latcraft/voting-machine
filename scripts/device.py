@@ -6,6 +6,8 @@ import usb
 import nfc
 import yaml
 import logging
+import time
+import datetime
 
 import RPi.GPIO as GPIO
 import grovepi as Grove
@@ -31,8 +33,10 @@ logging.basicConfig(
 # DATA
 ################################################################################
 
-active = True
-config = None
+active    = True
+config    = None
+stats     = {}
+idle_time = current_millis()
 
 with open('/etc/device.yaml', 'r') as f:
   config = yaml.load(f)
@@ -161,7 +165,6 @@ def blinkSparkFunLedAndBeepGroveBuzzer(color = 0, timeout = 1):
   Grove.digitalWrite(buzzer, 0)
   GPIO.output(SF_LEDS[color], SF_LED_OFF)
 
-
 def blinkGroveLedAndBeepGroveBuzzer(color = 0, timeout = 1):
   light = int(config['grove_led'])
   buzzer = int(config['grove_buzzer'])    
@@ -171,6 +174,190 @@ def blinkGroveLedAndBeepGroveBuzzer(color = 0, timeout = 1):
   Grove.digitalWrite(buzzer, 0)
   Grove.analogWrite(light, 0)
 
+
+
+
+
+
+def ledOn(ledPin, button):
+  GPIO.setmode(GPIO.BCM)
+  GPIO.setup(ledPin, GPIO.OUT)
+  GPIO.output(ledPin, 0)
+  GPIO.output(ledPin, 1)
+
+def ledOff(ledPin, button):
+  GPIO.setmode(GPIO.BCM)
+  GPIO.setup(ledPin, GPIO.OUT)
+  GPIO.output(ledPin, 0)
+
+def groveBuzzerOn(button):
+  buzzer = int(config['grove_buzzer'])
+  Grove.digitalWrite(buzzer, 1)
+
+def groveBuzzerOff(button):
+  buzzer = int(config['grove_buzzer'])
+  Grove.digitalWrite(buzzer, 0)
+
+def resetIdle():
+  idle_time = int(round(time.time() * 1000))
+
+def logPress(button):
+  logging.info(str(button.name) + ' pressed')
+
+def accumulateStats(button):
+  stats[button.name]++
+
+
+
+
+def action(onFunctions, offFunctions, timeout, button):
+  try:
+    for onFunction in onFunctions:
+      onFunction(button)
+    sleep(timeout)
+  finally:
+    for offFunction in offFunctions:  
+      offFunction(button)
+
+
+
+class Idler:
+
+  def __init__(self, action, timeout):
+    self.timeout = timeout
+    self.action = action
+    self.idle_time = current_millis()
+    self.__start()
+
+  def current_millis():
+    return int(round(time.time() * 1000))
+
+  def reset_idle_time(self):
+    self.idle_time = current_millis()
+
+  def __react(self):
+
+    if self.action is not None:
+      self.action(self)
+
+  def __idle_for_too_long(self):
+    return current_millis - idle_time > self.timeout
+
+  def __idle(self):
+    while True:
+      if __idle_for_too_long():
+        self.__react()
+        self.__reset_idle()
+      sleep(20)
+
+  def __start():
+    thread = Thread(target = __idle, args = (self))
+    thread.daemon = True
+    thread.start()
+
+
+class Button:
+
+  def __init__(self, pin, name, action):
+    self.pin = pin
+    self.name = name
+    self.action = action 
+    self.__start()
+
+  def __react(self):
+    if self.action is not None:
+      self.action(self)
+
+  def __start(self):
+    thread = Thread(target = self.__listen, args = (self))
+    thread.daemon = True
+    thread.start()
+
+  def __listen(self):
+    GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+    prev_input = GPIO.input(self.pin)
+    while active:
+      curr_input = GPIO.input(self.pin)
+      if ((not prev_input) and curr_input):        
+        self.__react()
+      prev_input = curr_input
+      sleep(0.05)    
+
+
+class NfcReader:
+
+  def __init__(self, action):
+    self.action = action 
+    self.start()
+
+  def __react(self):
+    if self.action is not None:
+      self.action(self)
+
+  def __start(self):
+    thread = Thread(target = self.__listen, args = (self))
+    thread.daemon = True
+    thread.start()
+
+  def __listen(self):
+    def processTag(tag):
+      logging.info( str(tag) + ' on ' + str(reader) )
+      self.__react()
+      return True
+    while active:
+      reader.connect(rdwr={'on-connect': processTag})
+
+
+
+idler = Idler(60000, action())
+Button(17, 'RED', action(onFunctions = [idler.reset_idle_time, logPress, accumulateStats, ledOn(18), groveBuzzerOn], offFunctions = [groveBuzzerOff, ledOff(18)], timeout = 0.1))
+Button(17, 'RED', action(onFunctions = [idler.reset_idle_time, logPress, accumulateStats, ledOn(18), groveBuzzerOn], offFunctions = [groveBuzzerOff, ledOff(18)], timeout = 0.1))
+Button(17, 'RED', action(onFunctions = [idler.reset_idle_time, logPress, accumulateStats, ledOn(18), groveBuzzerOn], offFunctions = [groveBuzzerOff, ledOff(18)], timeout = 0.1))
+
+
+
+
+buttons:
+  RED:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+  GREEN:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+  YELLOW:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+
+
+groveLed
+piGlowLed
+
+
+
+nfcReaders:
+
+
+idling:
+  actions:
+    - led
+    - led
+    - led
+
+
+
+
+
+
+
+
+
+
 def buttonReaderThread(button, buttonPins, buttonNames, actionFunction, timeout):
   GPIO.setup(buttonPins[button], GPIO.IN, pull_up_down = GPIO.PUD_UP)
   prev_input = GPIO.input(buttonPins[button])
@@ -178,6 +365,8 @@ def buttonReaderThread(button, buttonPins, buttonNames, actionFunction, timeout)
     input = GPIO.input(buttonPins[button])
     if ((not prev_input) and input):
       logging.info(str(buttonNames[button]) + ' pressed')
+      # TODO: reset idle timer
+      # TODO: add to stats
       if actionFunction is not None:
         actionFunction(button, timeout)
     prev_input = input
