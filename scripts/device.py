@@ -163,6 +163,7 @@ def leds_off(led_pins):
     GPIO.output(led_pin, 0)
 
 def grove_buzzer_on(buzzer):
+  Grove.pinMode(buzzer, "OUTPUT")
   Grove.digitalWrite(buzzer, 1)
 
 def grove_buzzer_off(buzzer):
@@ -209,6 +210,9 @@ idling_steps = [
   lambda: sleep(0.1),
 ]
 
+leds_off([17, 27, 22])
+grove_buzzer_off(6)
+
 stats = Stats()
 idler = Idler(actions = idling_steps, timeout = 6000)
 
@@ -224,6 +228,9 @@ logging.info('Started')
 def signal_handler(signal, frame):
   logging.info('Ctrl+C was detected!')
   active = False
+  idler.stop_idling()
+  leds_off([17, 27, 22])
+  grove_buzzer_off(6)
   logging.info('Stopped')
   sys.exit(0)
 
