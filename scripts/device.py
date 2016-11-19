@@ -182,10 +182,24 @@ logging.info('Starting IOT service')
 
 init_boards()
 
-idler = Idler(60000, action())
-Button(17, 'RED', action(on_functions = [idler.reset_idle_time, log_action, accumulate_stats, led_on(18), grove_buzzer_on], off_functions = [grove_buzzer_off, led_off(18)], timeout = 0.1))
-Button(17, 'RED', action(onFunctions = [idler.reset_idle_time, logPress, accumulateStats, ledOn(18), groveBuzzerOn], offFunctions = [groveBuzzerOff, ledOff(18)], timeout = 0.1))
-Button(17, 'RED', action(onFunctions = [idler.reset_idle_time, logPress, accumulateStats, ledOn(18), groveBuzzerOn], offFunctions = [groveBuzzerOff, ledOff(18)], timeout = 0.1))
+# idler = Idler(60000, action([], [], 1))
+
+Button(16, 'RED', 
+  action(
+    on_functions = [ 
+      # idler.reset_idle_time, 
+      log_action, 
+      accumulate_stats, 
+      led_on(17), 
+      grove_buzzer_on(6)
+    ], 
+    off_functions = [
+      grove_buzzer_off(6), 
+      led_off(17)
+    ], 
+    timeout = 0.1
+  )
+)
 
 logging.info('Started')
 
