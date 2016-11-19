@@ -8,6 +8,7 @@ import yaml
 import logging
 import time
 import datetime
+import inspect
 
 import RPi.GPIO as GPIO
 import grovepi as Grove
@@ -157,17 +158,23 @@ def grove_buzzer_off(buzzer):
 def log_action(device):
   logging.info(str(device.name) + ' activated')
 
-def accumulate_stats(button):
-  stats[button.name]++
+def accumulate_stats(device):
+  stats[device.name]++
 
-def action(on_functions, off_functions, timeout, button):
+def action(on_functions, off_functions, timeout, device):
   try:
     for on_function in on_functions:
-      on_function(button)
+      if len(inspect.getargspec(on_function).args) > 0:
+        on_function(device)
+      else
+        on_function()
     sleep(timeout)
   finally:
     for off_function in off_functions:  
-      off_function(button)
+      if len(inspect.getargspec(off_function).args) > 0:
+        off_function(device)
+      else
+        off_function()
 
 def nfc_readers(vendor_id, product_id):
   for device in usb.core.find(find_all=True):
