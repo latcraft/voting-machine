@@ -169,7 +169,7 @@ task installGrovePi(description: 'Install GrovePi libraries.') << {
 
 installGrovePi.mustRunAfter([ updateSystem, installTools, installPythonLibs ])
 
-task installHardwareClock << {
+task installHardwareClock(description: 'Install hardware clock based on Grove Pi RTC and I2C.') << {
   remote {
     // NOTE: https://learn.adafruit.com/adding-a-real-time-clock-to-raspberry-pi/set-rtc-time
     String check  = 'sudo grep -q -E "^dtoverlay=i2c-rtc,.*?$" /boot/config.txt'
@@ -181,13 +181,20 @@ task installHardwareClock << {
         exec(append)
       }
     }
-    exec 'sudo apt-get -y remove fake-hwclock'
+    exec 'sudo apt-get -yq remove fake-hwclock'
     exec 'sudo update-rc.d -f fake-hwclock remove'
     exec 'sudo hwclock -D -r'
     exec "sudo sed /lib/udev/hwclock-set -i -r -e '/if \\[ \\-e \\/run\\/systemd\\/system \\] \\; then/,+3d'"
   }
 }
 
+installHardwareClock.mustRunAfter([ updateSystem, installTools, installI2C, installGrovePi ])
+
+task installBluetooth(description: 'Install Bluetooth libraries.') << {
+  remote {
+    exec 'sudo apt-get -yq install bluetooth bluez'
+  }
+}
 
 task configureWifi(description: 'Configure WiFi networks.') << {
   remote {
@@ -260,5 +267,5 @@ task setHostname(description: 'Set hostname.') << {
   }
 }
 
-task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, configureWifi ]) 
+task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, installBluetooth ]) 
 task configureNode(dependsOn: [ copyCode, configureServices ]) 
