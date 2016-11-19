@@ -65,7 +65,7 @@ class Idler:
     return current_millis() - self.idle_time > self.timeout
 
   def __idle(self):
-    while True:
+    while active:
       if __idle_for_too_long():
         self.__react()
         self.__reset_idle()
