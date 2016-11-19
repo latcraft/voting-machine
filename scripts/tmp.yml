@@ -1,0 +1,42 @@
+buttons:
+  RED:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+  GREEN:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+  YELLOW:
+    pin: 17
+    actions:
+      - led: 18
+      - groveBuzzer: 6
+
+
+groveLed
+piGlowLed
+
+
+
+nfcReaders:
+
+
+idling:
+  actions:
+    - led
+    - led
+    - led
+
+
+
+
+
+
+
+
+
+
+
