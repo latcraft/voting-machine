@@ -2,21 +2,15 @@
 
 import sys
 import signal
-import usb
-import nfc
-import yaml
 import logging
 import time
-import datetime
 import inspect
 
 import RPi.GPIO as GPIO
 import grovepi as Grove
 
-from piglow import PiGlow
-from threading import Thread
+from threading import Thread, Lock
 from time import sleep
-from functools import partial
 
 ################################################################################
 # LOGGING
@@ -34,11 +28,6 @@ logging.basicConfig(
 ################################################################################
 
 active    = True
-config    = None
-stats     = {}
-
-with open('/etc/device.yaml', 'r') as f:
-  config = yaml.load(f)
 
 ################################################################################
 # CLASSES
@@ -46,34 +35,75 @@ with open('/etc/device.yaml', 'r') as f:
 
 class Idler:
 
-  def __init__(self, action, timeout):
-    self.timeout = timeout
-    self.action = action
-    self.idle_time = current_millis()
-    self.__start()
-
+  @staticmethod
   def current_millis():
     return int(round(time.time() * 1000))
 
-  def reset_idle_time(self):
-    self.idle_time = current_millis()
+  def __init__(self, actions, timeout):
+    self.name = 'Idler'
+    self.timeout = timeout
+    self.actions = actions
+    self.idling = False
+    self.idle_time = self.current_millis()
+    self.__start()
+
+  def stop_idling(self):
+    self.idling = False
+    self.__reset_idle_time()
+
+  def __reset_idle_time(self):
+    self.idle_time = self.current_millis()
 
   def __react(self):
-    if self.action is not None:
-      self.action(self)
+    self.idling = True    
+    if self.actions is not None:
+      while self.idling:
+        for action in self.actions:
+          if self.idling:
+            action()
+          else:
+            break        
+    self.__reset_idle_time()
 
   def __idle_for_too_long(self):
-    return current_millis() - self.idle_time > self.timeout
+    return self.current_millis() - self.idle_time > self.timeout
 
   def __idle(self):
     while active:
-      if __idle_for_too_long():
+      if self.__idle_for_too_long():
         self.__react()
-        self.__reset_idle()
-      sleep(20)
+      sleep(5)
 
-  def __start():
-    thread = Thread(target = __idle, args = (self))
+  def __start(self):
+    thread = Thread(target = self.__idle)
+    thread.daemon = True
+    thread.start()
+
+
+class Stats:
+
+  def __init__(self):
+    self.stats = {}
+    self.lock = Lock()
+    self.__start()
+   
+  def inc(self, counter):
+    with self.lock:
+      if not counter in self.stats:
+        self.stats[counter] = 0
+      self.stats[counter] += 1
+
+  def __write(self):
+    while active:
+      if len(self.stats) > 0:
+        with self.lock:
+          logging.info('STATS: ' + (','.join(str(counter_name) + '=' + str(counter_value) for counter_name, counter_value in self.stats.iteritems())))
+          for counter in self.stats:
+            self.stats[counter] = 0
+      sleep(60)
+    
+  def __start(self):
+    thread = Thread(target = self.__write)
     thread.daemon = True
     thread.start()
 
@@ -91,7 +121,7 @@ class Button:
       self.action(self)
 
   def __start(self):
-    thread = Thread(target = self.__listen, args = (self))
+    thread = Thread(target = self.__listen)
     thread.daemon = True
     thread.start()
 
@@ -106,30 +136,6 @@ class Button:
       sleep(0.05)    
 
 
-class NfcReader:
-
-  def __init__(self, name, action):
-    self.name = name
-    self.action = action 
-    self.start()
-
-  def __react(self):
-    if self.action is not None:
-      self.action(self)
-
-  def __start(self):
-    thread = Thread(target = self.__listen, args = (self))
-    thread.daemon = True
-    thread.start()
-
-  def __listen(self):
-    def processTag(tag):
-      logging.info( str(tag) + ' on ' + str(reader) )
-      self.__react()
-      return True
-    while active:
-      reader.connect(rdwr={'on-connect': processTag})
-
 ################################################################################
 # METHODS
 ################################################################################
@@ -137,6 +143,7 @@ class NfcReader:
 def init_boards():
   GPIO.setwarnings(False)
   GPIO.cleanup()
+  GPIO.setmode(GPIO.BCM)
    
 def led_on(led_pin):
   GPIO.setmode(GPIO.BCM)
@@ -149,6 +156,12 @@ def led_off(led_pin):
   GPIO.setup(led_pin, GPIO.OUT)
   GPIO.output(led_pin, 0)
 
+def leds_off(led_pins):
+  GPIO.setmode(GPIO.BCM)
+  for led_pin in led_pins:
+    GPIO.setup(led_pin, GPIO.OUT)
+    GPIO.output(led_pin, 0)
+
 def grove_buzzer_on(buzzer):
   Grove.digitalWrite(buzzer, 1)
 
@@ -158,28 +171,20 @@ def grove_buzzer_off(buzzer):
 def log_action(device):
   logging.info(str(device.name) + ' activated')
 
-def accumulate_stats(device):
-  stats[device.name]++
-
 def action(on_functions, off_functions, timeout, device):
   try:
     for on_function in on_functions:
-      if len(inspect.getargspec(on_function).args) > 0:
+      if device and len(inspect.getargspec(on_function).args) > 0:
         on_function(device)
-      else
+      else:
         on_function()
     sleep(timeout)
   finally:
-    for off_function in off_functions:  
-      if len(inspect.getargspec(off_function).args) > 0:
+    for off_function in off_functions:
+      if device and len(inspect.getargspec(off_function).args) > 0:
         off_function(device)
-      else
+      else:
         off_function()
-
-def nfc_readers(vendor_id, product_id):
-  for device in usb.core.find(find_all=True):
-    if device.idVendor == vendor_id and device.idProduct == product_id: 
-      yield nfc.ContactlessFrontend('usb:' + str(device.bus).zfill(3) + ':' + str(device.address).zfill(3))
 
 ################################################################################
 # MAIN
@@ -189,24 +194,30 @@ logging.info('Starting IOT service')
 
 init_boards()
 
-# idler = Idler(60000, action([], [], 1))
+idling_steps = [
+  lambda: led_on(17),
+  lambda: sleep(0.1),
+  lambda: led_off(17),
+  lambda: sleep(0.1),
+  lambda: led_on(27),
+  lambda: sleep(0.1),
+  lambda: led_off(27),
+  lambda: sleep(0.1),
+  lambda: led_on(22),
+  lambda: sleep(0.1),
+  lambda: led_off(22),
+  lambda: sleep(0.1),
+]
 
-Button(16, 'RED', 
-  action(
-    on_functions = [ 
-      # idler.reset_idle_time, 
-      log_action, 
-      accumulate_stats, 
-      led_on(17), 
-      grove_buzzer_on(6)
-    ], 
-    off_functions = [
-      grove_buzzer_off(6), 
-      led_off(17)
-    ], 
-    timeout = 0.1
-  )
-)
+stats = Stats()
+idler = Idler(actions = idling_steps, timeout = 6000)
+
+on_functions = [ lambda: idler.stop_idling(), log_action, lambda button: stats.inc(button.name), lambda: grove_buzzer_on(6) ]
+off_functions = [ lambda: grove_buzzer_off(6), lambda: leds_off([17, 27, 22]) ]
+
+Button(16, 'RED', lambda button: action(on_functions + [ lambda: led_on(17) ], off_functions, 0.1, button))
+Button(20, 'YELLOW', lambda button: action(on_functions + [ lambda: led_on(27) ], off_functions, 0.1, button))
+Button(21, 'GREEN', lambda button: action(on_functions + [ lambda: led_on(22) ], off_functions, 0.1, button))
 
 logging.info('Started')
 

@@ -1,3 +1,9 @@
+import usb
+import nfc
+import yaml
+
+from piglow import PiGlow
+
 ################################################################################
 # CONSTANTS
 ################################################################################
@@ -124,6 +130,12 @@ def blinkGroveLedAndBeepGroveBuzzer(color = 0, timeout = 1):
   Grove.analogWrite(light, 0)
 
 
+def nfc_readers(vendor_id, product_id):
+  for device in usb.core.find(find_all=True):
+    if device.idVendor == vendor_id and device.idProduct == product_id: 
+      yield nfc.ContactlessFrontend('usb:' + str(device.bus).zfill(3) + ':' + str(device.address).zfill(3))
+
+
 
 vendorId = int(config['nfc_vendor_id']) if config['nfc_vendor_id'] is not None else DEFAULT_VENDOR_ID  
 productId = int(config['nfc_product_id']) if config['nfc_product_id'] is not None else DEFAULT_PRODUCT_ID
@@ -134,3 +146,33 @@ for idx, reader in enumerate(nfcReaders(vendorId, productId)):
   thread.daemon = True
   thread.start()
 
+
+class NfcReader:
+
+  def __init__(self, name, action):
+    self.name = name
+    self.action = action 
+    self.start()
+
+  def __react(self):
+    if self.action is not None:
+      self.action(self)
+
+  def __start(self):
+    thread = Thread(target = self.__listen)
+    thread.daemon = True
+    thread.start()
+
+  def __listen(self):
+    def processTag(tag):
+      logging.info( str(tag) + ' on ' + str(reader) )
+      self.__react()
+      return True
+    while active:
+      reader.connect(rdwr={'on-connect': processTag})
+
+
+config    = None
+
+with open('/etc/device.yaml', 'r') as f:
+  config = yaml.load(f)
