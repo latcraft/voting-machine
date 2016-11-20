@@ -82,8 +82,10 @@ class Idler:
 
 class Stats:
 
-  def __init__(self):
+  def __init__(self, keys):
     self.stats = {}
+    for key in keys:
+      self.stats[key] = 0
     self.lock = Lock()
     self.__start()
    
@@ -213,7 +215,7 @@ idling_steps = [
 leds_off([17, 27, 22])
 grove_buzzer_off(6)
 
-stats = Stats()
+stats = Stats(keys = ['RED', 'YELLOW', 'GREEN'])
 idler = Idler(actions = idling_steps, timeout = 6000)
 
 on_functions = [ lambda: idler.stop_idling(), log_action, lambda button: stats.inc(button.name), lambda: grove_buzzer_on(6) ]
