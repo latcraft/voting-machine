@@ -25,7 +25,7 @@ task getDeviceLogs(description: 'Retrieve device log.') << {
 
 task getDeviceCode(description: 'Retrieve device code.') << {
   remote {
-    ['device.py', 'status.py'].each { code ->
+    ['device.py', 'status.py', 'report.py'].each { code ->
       scp {
         from { remoteFile "/home/pi/scripts/${code}" }
         into { localFile "${buildDir}/${project.hostConfig.hostname}-${code}" }

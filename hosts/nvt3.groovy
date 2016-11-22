@@ -1,7 +1,7 @@
 
-host     = '192.169.1.21'
+host     = '192.169.1.14'
 user     = 'pi'
 password = 'raspberry'
 hostname = 'nvt4'
-mac      = '00:0f:60:05:8d:de'
+mac      = '74:da:38:2e:1e:22'
 type     = 'latcraft_voter2'

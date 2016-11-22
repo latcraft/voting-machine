@@ -190,11 +190,22 @@ task installHardwareClock(description: 'Install hardware clock based on Grove Pi
 
 installHardwareClock.mustRunAfter([ updateSystem, installTools, installI2C, installGrovePi ])
 
+task setRigaTimeZone << {
+  remote {
+    exec 'sudo rm /etc/localtime'
+    exec 'sudo ln -s /usr/share/zoneinfo/Europe/Riga /etc/localtime'
+    exec 'sudo rm /etc/timezone'
+    exec 'echo "Europe/Riga" | sudo tee /etc/timezone'
+  }
+}
+
 task installBluetooth(description: 'Install Bluetooth libraries.') << {
   remote {
     exec 'sudo apt-get -yq install bluetooth bluez'
   }
 }
+
+installBluetooth.mustRunAfter([ updateSystem, installTools, installPythonLibs ])
 
 task configureWifi(description: 'Configure WiFi networks.') << {
   remote {
@@ -267,5 +278,6 @@ task setHostname(description: 'Set hostname.') << {
   }
 }
 
-task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, installNfc, installGrovePi, installPiGlow, installBluetooth ]) 
+task initNode(dependsOn: [ setHostname, updateSystem, installTools, installI2C, installPythonLibs, /*installNfc,*/ installGrovePi, installPiGlow, installBluetooth, setRigaTimeZone ]) 
 task configureNode(dependsOn: [ copyCode, configureServices ]) 
+
