@@ -56,6 +56,11 @@ task installPythonLibs(description: 'Install common Python libraries.') << {
     } else {
       println "web.py is already installed!"
     }
+    if (fail('sudo python -c "import termcolor"')) {
+      exec 'sudo pip install termcolor' 
+    } else {
+      println "termcolor is already installed!"
+    }
   }
 }
 

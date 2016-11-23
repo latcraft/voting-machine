@@ -5,6 +5,7 @@ import signal
 import logging
 import time
 import inspect
+import collections
 
 import RPi.GPIO as GPIO
 import grovepi as Grove
@@ -83,7 +84,7 @@ class Idler:
 class Stats:
 
   def __init__(self, keys):
-    self.stats = {}
+    self.stats = collections.OrderedDict()
     for key in keys:
       self.stats[key] = 0
     self.lock = Lock()
@@ -215,7 +216,7 @@ idling_steps = [
 leds_off([17, 27, 22])
 grove_buzzer_off(6)
 
-stats = Stats(keys = ['RED', 'YELLOW', 'GREEN'])
+stats = Stats(keys = ['GREEN', 'YELLOW', 'RED'])
 idler = Idler(actions = idling_steps, timeout = 6000)
 
 on_functions = [ lambda: idler.stop_idling(), log_action, lambda button: stats.inc(button.name), lambda: grove_buzzer_on(6) ]

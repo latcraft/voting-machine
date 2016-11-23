@@ -1,5 +1,6 @@
 import re
 
+from termcolor import colored
 from datetime import datetime
 from itertools import groupby
 
@@ -23,7 +24,7 @@ schedule = [
 records = []
 
 # Example: 2016-11-08 13:44:15 STATS: GREEN=4,YELLOW=5,RED=4
-record_pattern = re.compile('^(?P<date_time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+STATS:\s+GREEN=(?P<green>\d+),RED=(?P<red>\d+),YELLOW=(?P<yellow>\d+)$')
+record_pattern = re.compile('^(?P<date_time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+STATS:\s+GREEN=(?P<green>\d+),YELLOW=(?P<yellow>\d+),RED=(?P<red>\d+)$')
 
 with open("/var/log/device.log", "r") as input:
   for line in input:
@@ -36,12 +37,11 @@ with open("/var/log/device.log", "r") as input:
         if record['session'] is not None:
           records.append(record)
 
-print len(records)
-
-for session, session_records in groupby(records, key = lambda record: record['session']['start']):
+for session_start, session_records in groupby(records, key = lambda record: record['session']['start']):
+  R = Y = G = 0
   for r in session_records:
-    print str(int(r['green']))
-  R = sum(int(r['red']) for r in session_records)
-  Y = sum(int(r['yellow']) for r in session_records)
-  G = sum(int(r['green']) for r in session_records)
-  print str(G)
+    R += int(r['red'])
+    Y += int(r['yellow'])
+    G += int(r['green'])
+  print session_start.time().strftime('%H:%M') + '\t' + colored(str(G), 'green') + '\t' + colored(str(Y), 'yellow') + '\t' + colored(str(R), 'red')
+
