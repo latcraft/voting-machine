@@ -1,0 +1,4 @@
+hosts/* filter=crypt diff=crypt
+*.yml filter=crypt diff=crypt
+*.yaml filter=crypt diff=crypt
+*.json filter=crypt diff=crypt

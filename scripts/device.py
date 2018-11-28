@@ -6,10 +6,16 @@ import logging
 import time
 import inspect
 import collections
+import firebase_admin
+import fcntl, socket, struct
 
 import RPi.GPIO as GPIO
 import grovepi as Grove
 
+from firebase_admin import credentials
+from firebase_admin import db
+
+from multiprocessing import Queue
 from threading import Thread, Lock
 from time import sleep
 
@@ -138,6 +144,34 @@ class Button:
       prev_input = curr_input
       sleep(0.05)    
 
+class Sender:
+
+  def __init__(self, name, queue, db):
+    self.name = name
+    self.queue = queue
+    self.db = db
+    self.__start()
+
+  def __start(self):
+    thread = Thread(target = self.__listen)
+    thread.daemon = True
+    thread.start()
+
+  def __listen(self):
+    while True:       
+      item = queue.get()
+      try:
+        self.__send(item)
+      except:
+        print "Unexpected error:", sys.exc_info()[0]
+
+  def __send(self, item):
+    response = db.push().set({
+      'device': self.name,
+      'color': item[0].lower(),
+      'created': item[1]
+    })
+
 
 ################################################################################
 # METHODS
@@ -189,6 +223,11 @@ def action(on_functions, off_functions, timeout, device):
         off_function(device)
       else:
         off_function()
+  
+def getHwAddr(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
+    return ':'.join(['%02x' % ord(char) for char in info[18:24]])
 
 ################################################################################
 # MAIN
@@ -216,11 +255,27 @@ idling_steps = [
 leds_off([17, 27, 22])
 grove_buzzer_off(6)
 
-stats = Stats(keys = ['GREEN', 'YELLOW', 'RED'])
+firebase_admin.initialize_app(credentials.Certificate('/home/pi/scripts/firebase.json'), {
+  'databaseURL': 'https://devternity-voting.firebaseio.com'
+})
+
+queue = Queue()
+db = db.reference('votes')
+sender = Sender(getHwAddr('eth0'), queue, db)
+# stats = Stats(keys = ['GREEN', 'YELLOW', 'RED'])
 idler = Idler(actions = idling_steps, timeout = 6000)
 
-on_functions = [ lambda: idler.stop_idling(), log_action, lambda button: stats.inc(button.name), lambda: grove_buzzer_on(6) ]
-off_functions = [ lambda: grove_buzzer_off(6), lambda: leds_off([17, 27, 22]) ]
+on_functions = [ 
+  lambda: idler.stop_idling(), 
+  log_action, 
+  lambda button: queue.put((button.name, time.mktime(time.gmtime()))),
+  # lambda button: stats.inc(button.name), 
+  lambda: grove_buzzer_on(6)
+]
+off_functions = [ 
+  lambda: grove_buzzer_off(6), 
+  lambda: leds_off([17, 27, 22]) 
+]
 
 Button(16, 'RED', lambda button: action(on_functions + [ lambda: led_on(17) ], off_functions, 0.1, button))
 Button(20, 'YELLOW', lambda button: action(on_functions + [ lambda: led_on(27) ], off_functions, 0.1, button))

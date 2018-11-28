@@ -8,7 +8,8 @@ task updateSystem(description: 'Update to latest version of OS.') << {
 
 task installTools(description: 'Install common tools.') << {
   remote {
-    exec 'sudo apt-get -yq install nano git subversion bzr dos2unix iceweasel curl wget midori libusb-dev'
+    exec 'sudo apt-get -yq update'
+    exec 'sudo apt-get -yq install nano git subversion bzr dos2unix iceweasel curl wget midori libusb-dev python-dev python-pip'
   }
 }
 
@@ -61,10 +62,16 @@ task installPythonLibs(description: 'Install common Python libraries.') << {
     } else {
       println "termcolor is already installed!"
     }
+    if (fail('sudo python -c "import firebase_admin"')) {
+      exec 'sudo pip install firebase-admin'
+    } else {
+      println "firebase-admin is already installed!"
+    }
   }
 }
 
 installPythonLibs.mustRunAfter updateSystem
+installPythonLibs.mustRunAfter installTools
 
 task installNfc(description: 'Install common NFC libraries.') << {
   remote {
@@ -239,6 +246,10 @@ task copyCode(description: 'Copy configuration and code.') << {
     exec "mkdir -p /home/pi/scripts"
     exec "rm -rf /home/pi/scripts/*"
     scp {
+      from { localDir "config" }
+      into { remoteDir "/home/pi/scripts" }
+    }
+    scp {
       from { localDir "scripts" }
       into { remoteDir "/home/pi/scripts" }
     }
@@ -247,14 +258,6 @@ task copyCode(description: 'Copy configuration and code.') << {
 
 task configureServices(description: 'Configure services.') << {
   remote {
-
-    String configFile = "device_${project.hostConfig.type}.yaml"
-
-    scp {
-      from { localFile "config/${configFile}" }
-      into { remoteDir "/home/pi/scripts" }
-    }
-    exec "sudo ln -f /home/pi/scripts/${configFile} /etc/device.yaml"
 
     exec 'sudo cp /home/pi/scripts/device_service.sh /etc/init.d/device'
     exec 'sudo chmod 755 /etc/init.d/device'

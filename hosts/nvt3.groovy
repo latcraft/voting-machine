@@ -1,7 +1,3 @@
-
-host     = '192.169.1.14'
-user     = 'pi'
-password = 'raspberry'
-hostname = 'nvt3'
-mac      = '74:da:38:2e:1e:22'
-type     = 'latcraft_voter2'
+U2FsdGVkX1/srItX7kp4QCkKvOYDQNcttq6wHKhfwOn4q1M7WANXevuA0aepZkKz
+kXcEcegAOOOQhl2rdlYUqnZSVOjZhPjpBUXkFwxTEBDgpNDtqOGbeAGDQ27g2Zpt
+QJlmRGvI7kSWh7pOZ+cwkbP+7nKCmeQuLkotutvM2lZ2vbDs3UlVe7DZMUsgmtn7
